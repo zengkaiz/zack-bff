@@ -36,7 +36,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         TS_NODE_PROJECT: './tsconfig.json',
-        PORT: 80, // cluster 模式会自动递增
+        PORT: 8082, // cluster 模式会自动递增
       },
 
       // 日志配置
