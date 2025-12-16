@@ -1,3 +1,7 @@
+import { config as dotenvConfig } from 'dotenv';
+// 加载环境变量，必须在最前面
+dotenvConfig();
+
 import { addAliases } from 'module-alias';
 // 还必须加到前面 ！！
 addAliases({
@@ -14,12 +18,15 @@ import { loadControllers, scopePerRequest } from 'awilix-koa';
 import Koa from 'koa';
 import { configure, getLogger } from 'log4js';
 import serve from 'koa-static';
+import bodyParser from 'koa-bodyparser';
 
 const { port, viewDir, memoryFlag, staticDir } = config;
 
 const app = new Koa();
 // 静态文件生效节点
 app.use(serve(staticDir));
+// 请求体解析中间件
+app.use(bodyParser());
 // 日志系统
 configure({
   appenders: {

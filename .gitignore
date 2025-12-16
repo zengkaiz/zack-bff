@@ -98,6 +98,11 @@ layer/
 # Biome
 .biome/
 
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations/migration_lock.toml
+
 # Misc
 *.pem
 *.key

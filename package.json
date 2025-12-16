@@ -17,25 +17,35 @@
     "pm2:restart": "pm2 restart zack-mpa",
     "pm2:delete": "pm2 delete zack-mpa",
     "pm2:logs": "pm2 logs zack-mpa",
-    "pm2:status": "pm2 status"
+    "pm2:status": "pm2 status",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "prisma:reset": "prisma migrate reset"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@koa/ejs": "^5.1.0",
+    "@prisma/client": "6",
     "@types/koa-static": "^4.0.4",
     "awilix": "^12.0.5",
     "awilix-koa": "^11.1.0",
+    "dotenv": "^17.2.3",
     "koa": "^3.1.1",
+    "koa-bodyparser": "^4.4.1",
     "koa-static": "^5.0.0",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
-    "module-alias": "^2.2.3"
+    "module-alias": "^2.2.3",
+    "prisma": "6"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/koa": "^3.0.1",
+    "@types/koa-bodyparser": "^4.3.13",
     "@types/koa__ejs": "^5.1.1",
     "@types/lodash": "^4.17.21",
     "@types/log4js": "^2.3.5",
