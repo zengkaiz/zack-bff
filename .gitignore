@@ -20,6 +20,7 @@ lerna-debug.log*
 # PM2
 .pm2/
 ecosystem.config.js.bak
+ecosystem.config.production.js
 
 # Environment variables
 .env
