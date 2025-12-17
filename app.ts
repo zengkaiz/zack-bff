@@ -2,6 +2,15 @@ import { config as dotenvConfig } from 'dotenv';
 // 加载环境变量，必须在最前面
 dotenvConfig();
 
+import config from '@config/index';
+import render from '@koa/ejs';
+import ErrorHandler from '@middlewares/ErrorHandler';
+import { Lifetime, createContainer } from 'awilix';
+import { loadControllers, scopePerRequest } from 'awilix-koa';
+import Koa from 'koa';
+import bodyParser from 'koa-bodyparser';
+import serve from 'koa-static';
+import { configure, getLogger } from 'log4js';
 import { addAliases } from 'module-alias';
 // 还必须加到前面 ！！
 addAliases({
@@ -10,15 +19,6 @@ addAliases({
   '@config': `${__dirname}/config`,
   '@middlewares': `${__dirname}/middlewares`,
 });
-import config from '@config/index';
-import render from '@koa/ejs';
-import ErrorHandler from '@middlewares/ErrorHandler';
-import { Lifetime, createContainer } from 'awilix';
-import { loadControllers, scopePerRequest } from 'awilix-koa';
-import Koa from 'koa';
-import { configure, getLogger } from 'log4js';
-import serve from 'koa-static';
-import bodyParser from 'koa-bodyparser';
 
 const { port, viewDir, memoryFlag, staticDir } = config;
 
@@ -70,7 +70,12 @@ render(app, {
 
 // 把所有的路由全部load进来
 app.use(loadControllers(`${__dirname}/routers/**/*.${fileExt}`));
+// serverless 不需要这里启动服务
+if (process.env.NODE_ENV === 'development') {
+  // ECS EC2 本地运行listen
+  app.listen(port, () => {
+    console.log(`Server is runing ${port}`);
+  });
+}
 
-app.listen(port, () => {
-  console.log(`Server is runing ${port}`);
-});
+export default app;

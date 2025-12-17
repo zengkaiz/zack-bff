@@ -8,7 +8,7 @@ echo "🔨 开始构建..."
 
 # 1. 编译 TypeScript
 echo "📦 编译 TypeScript..."
-npx tsc
+tsc
 
 # 2. 复制 views 目录
 echo "📋 复制 views 目录到 dist..."

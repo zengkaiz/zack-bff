@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "./build.sh",
     "dev": "ts-node-dev --respawn --transpile-only app.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -40,7 +41,8 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "module-alias": "^2.2.3",
-    "prisma": "6"
+    "prisma": "6",
+    "serverless-http": "^4.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
