@@ -6,6 +6,12 @@
 3. [常用命令](#常用命令)
 4. [测试 API](#测试-api)
 5. [故障排查](#故障排查)
+6. [数据库备份（生产环境）](#数据库备份生产环境)
+7. [安全建议](#安全建议)
+8. [多环境配置最佳实践](#多环境配置最佳实践)
+9. [项目架构说明](#项目架构说明)
+10. [常见问题 FAQ](#常见问题-faq)
+11. [相关资源](#相关资源)
 
 ---
 
@@ -28,18 +34,49 @@ createdb zack_mpa_db
 ### 2. 配置环境变量
 
 编辑 `.env` 文件：
+
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/zack_mpa_db?schema=public"
+# 本地开发 - PostgreSQL
+DATABASE_URL="postgresql://zhang@localhost:5432/zack_mpa_db?schema=public"
+
 NODE_ENV="development"
 PORT=80
 ```
 
-**替换以下内容**：
-- `username`: 你的 PostgreSQL 用户名（默认是 `postgres`）
-- `password`: 你的 PostgreSQL 密码
+**配置说明**：
+- `username`: 你的 PostgreSQL 用户名（macOS 默认是你的系统用户名，Linux 默认是 `postgres`）
+- `password`: 你的 PostgreSQL 密码（本地开发可能不需要密码）
 - `localhost`: 本地开发使用 localhost
 - `5432`: PostgreSQL 默认端口
 - `zack_mpa_db`: 数据库名称
+
+**完整的 `.env` 配置示例**：
+
+```env
+# Database Configuration
+# 本地开发 - PostgreSQL
+DATABASE_URL="postgresql://zhang@localhost:5432/zack_mpa_db?schema=public"
+
+# 阿里云 RDS - PostgreSQL（生产环境）
+# 注意：密码中的特殊字符需要 URL 编码，例如 & 编码为 %26
+# DATABASE_URL="postgresql://zack:Zzk0116%26@rm-cn-epc4ki5ww00049io.rwlb.rds.aliyuncs.com:5432/zack_bff_db?schema=public"
+
+# AWS RDS - PostgreSQL（生产环境）
+# DATABASE_URL="postgresql://username:password@your-aws-rds-endpoint.rds.amazonaws.com:5432/zack_bff_db?schema=public"
+
+# Application Configuration
+NODE_ENV="development"
+PORT=80
+```
+
+**⚠️ 重要提示**：
+1. **密码特殊字符编码**：如果密码包含特殊字符（如 `&`, `@`, `#` 等），需要进行 URL 编码：
+   - `&` → `%26`
+   - `@` → `%40`
+   - `#` → `%23`
+   - 例如：密码 `Zzk0116&` 应写为 `Zzk0116%26`
+
+2. **不要提交 `.env` 文件到 Git**：该文件已在 `.gitignore` 中配置
 
 ### 3. 生成 Prisma Client 并运行迁移
 
@@ -186,7 +223,35 @@ DATABASE_URL="postgresql://zack_user:your_password@localhost:5432/zack_mpa_db?sc
 
 ## 常用命令
 
+### 项目命令
+
+```bash
+# 构建项目
+pnpm build
+
+# 开发模式启动
+pnpm dev
+
+# 数据库迁移（开发环境）
+pnpm db:migrate
+
+# 数据库迁移（生产环境）
+pnpm db:migrate:prod
+```
+
 ### Prisma 命令
+
+**⚠️ 注意**：本项目使用 **Prisma 6** 版本，确保已安装正确版本：
+```bash
+# 查看当前版本
+pnpm list prisma @prisma/client
+
+# 应该显示：
+# @prisma/client 6.x.x
+# prisma 6.x.x
+```
+
+**常用 Prisma 命令**：
 
 ```bash
 # 生成 Prisma Client（修改 schema.prisma 后必须运行）
@@ -194,11 +259,13 @@ pnpm prisma:generate
 
 # 创建新的迁移（开发环境）
 pnpm prisma:migrate
+# 输入迁移名称，例如：init 或 add_contact_table
 
 # 部署迁移（生产环境）
 pnpm prisma:deploy
 
 # 重置数据库（删除所有数据并重新运行迁移）
+# ⚠️ 警告：这将删除所有数据！仅用于开发环境
 pnpm prisma:reset
 
 # 打开 Prisma Studio（数据库可视化工具）
@@ -209,6 +276,9 @@ npx prisma -v
 
 # 格式化 schema.prisma 文件
 npx prisma format
+
+# 验证 schema.prisma 语法
+npx prisma validate
 ```
 
 ### PM2 命令
@@ -369,6 +439,79 @@ Error: Migration failed
 pnpm pm2:restart
 ```
 
+### 问题 6: Prisma 版本不兼容
+
+**错误信息**：
+```
+Error: The datasource property `url` is no longer supported in schema files
+```
+
+**原因**：安装了 Prisma 7，但项目使用 Prisma 6 的配置
+
+**解决方法**：
+```bash
+# 卸载并重新安装 Prisma 6
+pnpm remove prisma @prisma/client
+pnpm add prisma@6 @prisma/client@6
+
+# 重新生成 Client
+pnpm prisma:generate
+```
+
+### 问题 7: 密码包含特殊字符导致连接失败
+
+**错误信息**：
+```
+Error: Invalid connection string
+```
+
+**原因**：数据库密码包含 URL 特殊字符（如 `&`, `@`, `#`）未进行编码
+
+**解决方法**：
+在 `.env` 文件中对密码进行 URL 编码：
+```env
+# ❌ 错误示例（密码包含 &）
+DATABASE_URL="postgresql://user:Pass&word@host:5432/db"
+
+# ✅ 正确示例（& 编码为 %26）
+DATABASE_URL="postgresql://user:Pass%26word@host:5432/db"
+```
+
+常用特殊字符编码：
+- `&` → `%26`
+- `@` → `%40`
+- `#` → `%23`
+- `!` → `%21`
+- `$` → `%24`
+- `%` → `%25`
+
+### 问题 8: 开发环境看不到详细错误信息
+
+**解决方法**：
+本项目已增强错误处理，在非生产环境下会返回详细错误信息。确保 `.env` 中设置：
+```env
+NODE_ENV="development"
+```
+
+API 错误响应示例：
+```json
+{
+  "success": false,
+  "message": "Internal server error",
+  "error": "Column 'name' does not exist",
+  "code": "P2010"
+}
+```
+
+查看服务器日志获取完整错误堆栈：
+```bash
+# PM2 日志
+pnpm pm2:logs
+
+# 或直接运行开发服务器
+pnpm dev
+```
+
 ---
 
 ## 数据库备份（生产环境）
@@ -433,10 +576,193 @@ crontab -e
 
 ---
 
+## 多环境配置最佳实践
+
+### 环境文件管理
+
+项目支持多环境配置，推荐的文件结构：
+
+```
+zack-mpa-bff/
+├── .env                    # 本地开发环境（不提交到 Git）
+├── .env.example           # 环境变量模板（提交到 Git）
+├── .env.production        # 生产环境配置（不提交到 Git）
+└── .gitignore             # 已配置忽略所有 .env* 文件
+```
+
+### 配置示例
+
+**.env (本地开发)**:
+```env
+DATABASE_URL="postgresql://zhang@localhost:5432/zack_mpa_db?schema=public"
+NODE_ENV="development"
+PORT=80
+```
+
+**.env.production (阿里云生产环境)**:
+```env
+DATABASE_URL="postgresql://zack:Zzk0116%26@rm-cn-epc4ki5ww00049io.rwlb.rds.aliyuncs.com:5432/zack_bff_db?schema=public"
+NODE_ENV="production"
+PORT=80
+```
+
+**.env.production (AWS 生产环境)**:
+```env
+DATABASE_URL="postgresql://username:password@your-aws-endpoint.rds.amazonaws.com:5432/zack_bff_db?schema=public"
+NODE_ENV="production"
+PORT=80
+```
+
+### 部署流程
+
+#### 阿里云 ECS 部署
+
+```bash
+# 1. SSH 登录到服务器
+ssh user@your-aliyun-ecs-ip
+
+# 2. 进入项目目录
+cd /path/to/zack-mpa-bff
+
+# 3. 拉取最新代码
+git pull origin main
+
+# 4. 安装依赖
+pnpm install
+
+# 5. 生成 Prisma Client
+pnpm prisma:generate
+
+# 6. 运行生产环境数据库迁移
+pnpm db:migrate:prod
+
+# 7. 构建项目
+pnpm build
+
+# 8. 重启 PM2 服务
+pnpm pm2:restart
+```
+
+#### AWS Lambda 部署
+
+如果使用 AWS SAM/Lambda 部署，请参考 [AWS_SAM_DEPLOYMENT_GUIDE.md](./AWS_SAM_DEPLOYMENT_GUIDE.md)
+
+### 环境变量安全检查清单
+
+部署前请确认：
+
+- [ ] `.env` 文件已添加到 `.gitignore`
+- [ ] 生产环境使用强密码（至少 12 位，包含大小写字母、数字和特殊字符）
+- [ ] 密码中的特殊字符已正确进行 URL 编码
+- [ ] 使用内网地址连接 RDS（性能更好、更安全）
+- [ ] 数据库白名单仅允许应用服务器 IP
+- [ ] `NODE_ENV` 设置为 `production`
+- [ ] 已运行数据库迁移 (`pnpm prisma:deploy` 或 `pnpm db:migrate:prod`)
+- [ ] 已生成 Prisma Client (`pnpm prisma:generate`)
+
+---
+
+## 项目架构说明
+
+### 技术栈
+
+- **后端框架**: Koa.js
+- **依赖注入**: Awilix
+- **ORM**: Prisma 6
+- **数据库**: PostgreSQL 15
+- **进程管理**: PM2
+- **TypeScript**: 支持类型安全
+
+### 目录结构
+
+```
+zack-mpa-bff/
+├── app.ts                 # 应用入口文件
+├── routers/               # 路由控制器
+│   ├── ContactController.ts
+│   └── ...
+├── services/              # 业务逻辑服务
+│   ├── PrismaService.ts
+│   ├── ContactService.ts
+│   └── ...
+├── prisma/                # Prisma 配置
+│   └── schema.prisma      # 数据库模型定义
+├── middlewares/           # Koa 中间件
+├── interface/             # TypeScript 接口定义
+├── .env                   # 环境变量（不提交）
+└── package.json           # 项目依赖
+```
+
+### API 设计规范
+
+本项目 API 遵循 RESTful 设计，统一响应格式：
+
+**成功响应**:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "操作成功"
+}
+```
+
+**错误响应**:
+```json
+{
+  "success": false,
+  "message": "错误信息",
+  "error": "详细错误（仅开发环境）",
+  "code": "错误代码（仅开发环境）"
+}
+```
+
+---
+
 ## 下一步
 
 - 查看 [FRONTEND_EXAMPLE.md](./FRONTEND_EXAMPLE.md) 了解前端集成示例
-- 根据需求扩展数据库 Schema
+- 查看 [AWS_SAM_DEPLOYMENT_GUIDE.md](./AWS_SAM_DEPLOYMENT_GUIDE.md) 了解 AWS Lambda 部署
+- 根据需求扩展数据库 Schema（编辑 `prisma/schema.prisma`）
 - 添加更多业务逻辑和接口
 
-有问题？查看 Prisma 官方文档：https://www.prisma.io/docs
+---
+
+## 常见问题 FAQ
+
+**Q: 本地开发时需要安装 PostgreSQL 吗？**
+A: 是的，本项目使用 PostgreSQL。你可以使用 Homebrew (macOS) 或 apt (Linux) 安装。
+
+**Q: 可以使用其他数据库吗（如 MySQL、SQLite）？**
+A: 可以，但需要修改 `prisma/schema.prisma` 中的 `provider`。不过推荐使用 PostgreSQL，因为它功能更强大。
+
+**Q: 如何查看数据库中的数据？**
+A: 运行 `pnpm prisma:studio`，在浏览器中打开 http://localhost:5555 即可可视化查看和编辑数据。
+
+**Q: 生产环境如何备份数据库？**
+A: 参考本文档的 [数据库备份](#数据库备份生产环境) 部分，使用 `pg_dump` 命令。
+
+**Q: 如何添加新的数据库表？**
+A: 编辑 `prisma/schema.prisma` 添加新的 model，然后运行 `pnpm prisma:migrate` 创建迁移。
+
+**Q: Prisma Client 是什么？**
+A: Prisma Client 是根据你的数据库 schema 自动生成的类型安全的数据库客户端，每次修改 schema 后都需要重新生成。
+
+**Q: 为什么要使用 Prisma 6 而不是 Prisma 7？**
+A: Prisma 7 改变了配置方式，当前项目基于 Prisma 6。等 Prisma 7 更稳定后可以考虑升级。
+
+---
+
+## 相关资源
+
+- [Prisma 官方文档](https://www.prisma.io/docs)
+- [PostgreSQL 官方文档](https://www.postgresql.org/docs/)
+- [Koa.js 官方文档](https://koajs.com/)
+- [PM2 官方文档](https://pm2.keymetrics.io/)
+- [阿里云 RDS 文档](https://help.aliyun.com/product/26090.html)
+- [AWS RDS 文档](https://docs.aws.amazon.com/rds/)
+
+---
+
+**最后更新**: 2024-12-19
+**项目版本**: 1.0.0
+**Prisma 版本**: 6.19.1

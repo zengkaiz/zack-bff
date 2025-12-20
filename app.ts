@@ -27,13 +27,21 @@ const app = new Koa();
 app.use(serve(staticDir));
 // 请求体解析中间件
 app.use(bodyParser());
-// 日志系统
+// 日志系统 - Lambda 环境使用 console，本地环境使用文件
+const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 configure({
   appenders: {
-    app: { type: 'file', filename: `${__dirname}/logs/info.log` },
+    console: { type: 'console' },
+    file: {
+      type: 'file',
+      filename: isLambda ? '/tmp/info.log' : `${__dirname}/logs/info.log`
+    },
   },
   categories: {
-    default: { appenders: ['app'], level: 'error' },
+    default: {
+      appenders: [isLambda ? 'console' : 'file'],
+      level: 'error'
+    },
   },
 });
 const logger = getLogger();

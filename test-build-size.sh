@@ -1,27 +1,13 @@
 #!/bin/bash
 
-if [ -z "$1" ]; then
-    echo "❌ Environment parameter is required! Please use: ./lambda-build.sh [development|production|test]"
-    exit 1
-fi
+# 测试构建脚本 - 只构建不部署，用于验证包大小
 
-ENV=$1
-ENV_FILE=".env.$ENV"
+set -e
 
-if [ ! -f "$ENV_FILE" ]; then
-    echo "❌ Environment file $ENV_FILE does not exist!"
-    exit 1
-fi
-
-set -e  # 遇到错误立即退出
-
-# 清理旧的构建文件
 echo "🧹 Cleaning up old build files..."
 rm -rf dist/
 rm -rf layer/
-rm -rf .aws-sam/
 
-# 创建必要的目录
 echo "📁 Creating directories..."
 mkdir -p dist/
 mkdir -p layer/nodejs/
@@ -86,7 +72,7 @@ fi
 
 # 清理不必要的包和文件
 echo "🧹 Removing unnecessary packages..."
-# 删除大型 devDependencies（被 @prisma/client 间接引入或临时安装的）
+# 删除大型 devDependencies（如果被间接引入或临时安装的）
 rm -rf node_modules/prisma 2>/dev/null || true
 rm -rf node_modules/typescript 2>/dev/null || true
 rm -rf node_modules/@biomejs 2>/dev/null || true
@@ -130,58 +116,58 @@ find node_modules -name "CHANGELOG*" -delete 2>/dev/null || true
 
 cd ../..
 
-# 4. 显示大小统计
+# 4. 显示详细大小统计
 echo ""
-echo "📊 Build size summary:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "═══════════════════════════════════════"
+echo "📊 BUILD SIZE ANALYSIS"
+echo "═══════════════════════════════════════"
+echo ""
 echo "📦 Application code (dist/):"
 du -sh dist/
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "📂 Dist breakdown:"
+du -sh dist/* 2>/dev/null | sort -hr
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "📚 Dependencies layer (layer/):"
 du -sh layer/
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📦 Top 10 largest dependencies in layer:"
-du -sh layer/nodejs/node_modules/* 2>/dev/null | sort -hr | head -10
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "📦 Top 15 largest dependencies:"
+du -sh layer/nodejs/node_modules/* 2>/dev/null | sort -hr | head -15
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 
-# 检查 layer 大小
+# 检查大小限制
 LAYER_SIZE=$(du -sm layer/ | cut -f1)
-if [ $LAYER_SIZE -gt 240 ]; then
-    echo "⚠️  WARNING: Layer size is ${LAYER_SIZE}MB, close to 250MB limit!"
-fi
+DIST_SIZE=$(du -sm dist/ | cut -f1)
 
+echo "📏 Size check against AWS Lambda limits:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Layer size:       ${LAYER_SIZE}MB / 250MB limit"
+echo "Application size: ${DIST_SIZE}MB / 250MB limit"
 echo ""
-echo "✅ Build complete!"
-echo ""
 
-# 5. 执行 sam build 和部署
-echo "🚀 Running sam build..."
-sam build --skip-pull-image
-
-if [ $? -eq 0 ]; then
-    if [ "$ENV" = "production" ] || [ "$ENV" = "test" ]; then
-        echo "🚀 Deploying to $ENV environment..."
-
-        # 检查是否已有配置文件
-        if [ -f "samconfig.toml" ]; then
-            echo "📝 Using existing configuration from samconfig.toml"
-            sam deploy --config-env $ENV
-        else
-            echo "📝 First deployment - starting guided configuration..."
-            echo ""
-            echo "ℹ️  You will be asked to configure the following:"
-            echo "  - Stack Name (e.g., zack-mpa-bff-prod)"
-            echo "  - AWS Region (e.g., us-east-1)"
-            echo "  - DBUsername (default: zackadmin)"
-            echo "  - DBPassword (min 8 characters, alphanumeric only)"
-            echo ""
-            sam deploy --guided
-        fi
-    else
-        echo "🌍 Starting local API..."
-        sam local start-api --warm-containers EAGER
-    fi
-else
-    echo "❌ Sam build failed!"
+if [ $LAYER_SIZE -gt 250 ]; then
+    echo "❌ ERROR: Layer exceeds 250MB limit!"
     exit 1
+elif [ $LAYER_SIZE -gt 240 ]; then
+    echo "⚠️  WARNING: Layer size is close to limit!"
+elif [ $LAYER_SIZE -gt 200 ]; then
+    echo "⚡ Layer size is acceptable but consider optimization"
+else
+    echo "✅ Layer size is good!"
 fi
+
+if [ $DIST_SIZE -gt 250 ]; then
+    echo "❌ ERROR: Application exceeds 250MB limit!"
+    exit 1
+else
+    echo "✅ Application size is good!"
+fi
+
+echo ""
+echo "═══════════════════════════════════════"
+echo "✅ Build test complete!"
+echo "═══════════════════════════════════════"

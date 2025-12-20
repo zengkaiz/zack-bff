@@ -10,6 +10,10 @@ echo "🔨 开始构建..."
 echo "📦 编译 TypeScript..."
 tsc
 
+# 1.5 转换路径别名为相对路径
+echo "🔄 Resolving path aliases..."
+tsc-alias
+
 # 2. 复制 views 目录
 echo "📋 复制 views 目录到 dist..."
 cp -r views dist/views

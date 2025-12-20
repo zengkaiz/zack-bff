@@ -12,15 +12,15 @@ git pull origin master
 
 # 2. 安装依赖
 echo "📦 安装依赖..."
-yarn install --production=false
+pnpm install --production=false
 
 # 3. 运行测试（可选）
 # echo "🧪 运行测试..."
-# yarn test
+# pnpm test
 
 # 4. 构建项目
 echo "🔨 构建项目..."
-yarn build
+pnpm build
 
 # 5. 零停机重载
 echo "🔄 执行零停机重载..."

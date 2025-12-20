@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: NestJS Lambda in VPC with Aurora + NAT outbound
+
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Timeout: 30
+    MemorySize: 1024
+    Architectures: ["x86_64"]
+
+Resources:
+  PrismaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: prisma-layer
+      ContentUri: layer/
+      CompatibleRuntimes:
+        - nodejs24.x
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: aurora-nest-api
+      CodeUri: .
+      Handler: dist/src/lambda.handler
+      Layers:
+        - !Ref PrismaLayer
+      # ✅ 关键：IAM 权限（必须）
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
+      Events:
+        HttpApi:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            PayloadFormatVersion: "2.0"
+
+      # ⭐ 关键：VPC 配置
+      VpcConfig:
+        SubnetIds:
+          - subnet-0c8ccaed79b7af457
+          - subnet-0cc6eec82cb00e547
+          - subnet-0b75f4ef0c1693734
+        SecurityGroupIds:
+          - sg-0b62959e1e13e4946
+
+      Environment:
+        Variables:
+          DATABASE_URL: postgresql://postgres:<PASSWORD>@database-2.cluster-c3cc0oymodjo.ap-southeast-1.rds.amazonaws.com:5432/aurora_nest_prisma?sslmode=require
+          GITHUB_API_BASE: https://api.github.com

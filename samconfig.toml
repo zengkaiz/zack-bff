@@ -1,0 +1,43 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "zack-mpa-bff-prod"
+resolve_s3 = true
+s3_prefix = "zack-mpa-bff-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "DBUsername=\"zackadmin\""
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"
+
+[production.deploy.parameters]
+stack_name = "zack-mpa-bff-prod"
+resolve_s3 = true
+s3_prefix = "zack-mpa-bff-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "DBUsername=\"zackadmin\""
+image_repositories = []
+
+[production.global.parameters]
+region = "us-east-1"
+
+[test.deploy.parameters]
+stack_name = "zack-mpa-bff-test"
+resolve_s3 = true
+s3_prefix = "zack-mpa-bff-test"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "DBUsername=\"zackadmin\""
+image_repositories = []
+
+[test.global.parameters]
+region = "us-east-1"

@@ -23,7 +23,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:reset": "prisma migrate reset"
+    "prisma:reset": "prisma migrate reset",
+    "db:migrate": "ts-node scripts/migrate-db.ts",
+    "db:migrate:prod": "NODE_ENV=production ts-node scripts/migrate-db.ts"
   },
   "keywords": [],
   "author": "",
@@ -31,7 +33,6 @@
   "dependencies": {
     "@koa/ejs": "^5.1.0",
     "@prisma/client": "6",
-    "@types/koa-static": "^4.0.4",
     "awilix": "^12.0.5",
     "awilix-koa": "^11.1.0",
     "dotenv": "^17.2.3",
@@ -41,18 +42,20 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "module-alias": "^2.2.3",
-    "prisma": "6",
     "serverless-http": "^4.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/koa": "^3.0.1",
     "@types/koa-bodyparser": "^4.3.13",
+    "@types/koa-static": "^4.0.4",
     "@types/koa__ejs": "^5.1.1",
     "@types/lodash": "^4.17.21",
     "@types/log4js": "^2.3.5",
     "@types/module-alias": "^2.0.4",
     "prettier": "^3.7.4",
-    "ts-node-dev": "^2.0.0"
+    "prisma": "6",
+    "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.16"
   }
 }

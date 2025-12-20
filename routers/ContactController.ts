@@ -52,10 +52,21 @@ class ContactController {
         };
       } else {
         console.error('Error creating contact:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          meta: error.meta,
+          stack: error.stack,
+        });
         ctx.status = 500;
         ctx.body = {
           success: false,
           message: 'Internal server error',
+          // 在非生产环境下返回详细错误信息
+          ...(process.env.NODE_ENV !== 'production' && {
+            error: error.message,
+            code: error.code
+          }),
         };
       }
     }
